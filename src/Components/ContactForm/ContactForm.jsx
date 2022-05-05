@@ -1,11 +1,49 @@
 import React, { useState } from 'react';
 import { ButtonSubmit, FormLabel, Icon } from './ContactForm.styled';
 import { AiOutlineUserAdd, AiOutlinePhone } from 'react-icons/ai';
-import PropTypes from 'prop-types';
+import { useDispatch, useSelector } from 'react-redux';
+import { formattedNumber } from 'Helpers/formattedNumber';
+import { toast } from 'react-toastify';
+import { add, setFilter } from 'redux/reduxSlices';
+import { nanoid } from 'nanoid';
 
-export const ContactForm = ({ onSubmit }) => {
+export const ContactForm = () => {
+  const dispatch = useDispatch();
+  const contacts = useSelector(state => state.items);
+
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
+
+  const addContact = ({ name, number }) => {
+    const newContact = {
+      id: nanoid(),
+      name,
+      number: formattedNumber(number),
+    };
+
+    for (let i = 0; i < contacts.length; i++) {
+      const normalizedName = contacts[i].name.toLowerCase();
+      const oldNumber = contacts[i].number;
+
+      if (newContact.name.toLowerCase() === normalizedName) {
+        return toast.error(`Sorry, but ${name} is already in contacts!`);
+      }
+      if (newContact.number === oldNumber) {
+        return toast.error(
+          `Sorry, but ${number} belongs to ${contacts[i].name}!`
+        );
+      }
+    }
+    dispatch(add(newContact));
+    dispatch(setFilter(''));
+  };
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    addContact({name, number})
+    resetForm();
+    toast.success(`Contact ${name} is added to Phoonebook!`);
+  };
 
   const inputValue = e => {
     const { name, value } = e.target;
@@ -21,13 +59,7 @@ export const ContactForm = ({ onSubmit }) => {
     }
   };
 
-  const handleSubmit = e => {
-    e.preventDefault();
-    onSubmit({ name, number });
-    reset();
-  };
-
-  const reset = () => {
+  const resetForm = () => {
     setName('');
     setNumber('');
   };
@@ -64,8 +96,4 @@ export const ContactForm = ({ onSubmit }) => {
       <ButtonSubmit type="submit">Submit</ButtonSubmit>
     </form>
   );
-};
-
-ContactForm.propTypes = {
-  onSubmit: PropTypes.func.isRequired,
 };
